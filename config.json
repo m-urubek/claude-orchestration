@@ -1,0 +1,24 @@
+{
+    "agents": {
+        "prd-generator":           { "model": "claude-opus-4-6",          "maxTurns": 30, "maxBudgetUsd": 2.00 },
+        "prd-analyzer":            { "model": "claude-opus-4-5-20251101", "maxTurns": 20, "maxBudgetUsd": 1.00 },
+        "business-analyzer":       { "model": "claude-opus-4-6",          "maxTurns": 15, "maxBudgetUsd": 0.50 },
+        "clarification-answerer":  { "model": "claude-opus-4-5-20251101", "maxTurns": 30, "maxBudgetUsd": 1.50 },
+        "planner":                 { "model": "claude-opus-4-5-20251101", "maxTurns": 30, "maxBudgetUsd": 2.00 },
+        "microplanner":            { "model": "claude-opus-4-5-20251101", "maxTurns": 20, "maxBudgetUsd": 0.50 },
+        "implementer":             { "model": "claude-opus-4-5-20251101", "maxTurns": 50, "maxBudgetUsd": 3.00 },
+        "verifier":                { "model": "claude-opus-4-5-20251101", "maxTurns": 30, "maxBudgetUsd": 1.00 },
+        "final-verifier":          { "model": "claude-opus-4-5-20251101", "maxTurns": 30, "maxBudgetUsd": 2.00 }
+    },
+    "limits": {
+        "maxBusinessClarificationRounds": 3,
+        "maxClarificationRounds": 5,
+        "maxQuestionsPerAnswererInstance": 5,
+        "maxImplementationIterations": 3,
+        "maxPipelineRetries": 2,
+        "agentTimeoutMinutes": 30
+    },
+    "defaultMode": "interactive",
+    "buildCommands": ["npm run build"],
+    "projectContext": ""
+}

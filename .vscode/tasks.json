@@ -1,0 +1,140 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Pipeline: Interactive",
+            "type": "shell",
+            "command": "npx tsx src/orchestrate.ts --mode interactive --project-dir \"${input:projectDir}\"",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": true
+            },
+            "problemMatcher": [],
+            "detail": "Run pipeline in interactive mode (human answers all clarification questions)"
+        },
+        {
+            "label": "Pipeline: Autonomous",
+            "type": "shell",
+            "command": "npx tsx src/orchestrate.ts --mode autonomous --project-dir \"${input:projectDir}\"",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": true
+            },
+            "problemMatcher": [],
+            "detail": "Run pipeline in autonomous mode (brief business Qs for human, AI answers technical Qs)"
+        },
+        {
+            "label": "Pipeline: Autonomous + Stop After PRD",
+            "type": "shell",
+            "command": "npx tsx src/orchestrate.ts --mode autonomous --stop-after-prd --project-dir \"${input:projectDir}\"",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": true
+            },
+            "problemMatcher": [],
+            "detail": "Autonomous mode — stop after PRD is finalized for review before implementation"
+        },
+        {
+            "label": "Pipeline: Interactive + Stop After PRD",
+            "type": "shell",
+            "command": "npx tsx src/orchestrate.ts --mode interactive --stop-after-prd --project-dir \"${input:projectDir}\"",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": true
+            },
+            "problemMatcher": [],
+            "detail": "Interactive mode — stop after PRD is finalized for review before implementation"
+        },
+        {
+            "label": "Pipeline: Resume",
+            "type": "shell",
+            "command": "npx tsx src/orchestrate.ts --resume",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": true
+            },
+            "problemMatcher": [],
+            "detail": "Resume pipeline from last saved state (project dir and mode restored from state)"
+        },
+        {
+            "label": "Pipeline: Dry Run (Interactive)",
+            "type": "shell",
+            "command": "npx tsx src/orchestrate.ts --dry-run --mode interactive --project-dir \"${input:projectDir}\"",
+            "args": [
+                {
+                    "value": "${input:taskDescription}",
+                    "quoting": "strong"
+                }
+            ],
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": true
+            },
+            "problemMatcher": [],
+            "detail": "Test interactive pipeline flow without invoking Claude agents"
+        },
+        {
+            "label": "Pipeline: Dry Run (Autonomous)",
+            "type": "shell",
+            "command": "npx tsx src/orchestrate.ts --dry-run --mode autonomous --project-dir \"${input:projectDir}\"",
+            "args": [
+                {
+                    "value": "${input:taskDescription}",
+                    "quoting": "strong"
+                }
+            ],
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": true
+            },
+            "problemMatcher": [],
+            "detail": "Test autonomous pipeline flow without invoking Claude agents"
+        },
+        {
+            "label": "Pipeline: Run with Task File",
+            "type": "shell",
+            "command": "npx tsx src/orchestrate.ts --task-file \"${input:taskFile}\" --project-dir \"${input:projectDir}\"",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": true
+            },
+            "problemMatcher": [],
+            "detail": "Run pipeline with task description from a file (interactive mode)"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "projectDir",
+            "type": "promptString",
+            "description": "Absolute path to the target project directory",
+            "default": "${workspaceFolder:scio--progress-path}"
+        },
+        {
+            "id": "taskDescription",
+            "type": "promptString",
+            "description": "Enter the task description for the pipeline"
+        },
+        {
+            "id": "taskFile",
+            "type": "promptString",
+            "description": "Path to the task description file",
+            "default": "task.md"
+        }
+    ]
+}
