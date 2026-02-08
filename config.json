@@ -1,11 +1,11 @@
 {
     "agents": {
-        "prd-generator":           { "model": "claude-opus-4-6",          "maxTurns": 30, "maxBudgetUsd": 2.00 },
+        "prd-generator":           { "model": "claude-opus-4-5-20251101", "maxTurns": 30, "maxBudgetUsd": 2.00 },
         "prd-analyzer":            { "model": "claude-opus-4-5-20251101", "maxTurns": 20, "maxBudgetUsd": 1.00 },
-        "business-analyzer":       { "model": "claude-opus-4-6",          "maxTurns": 15, "maxBudgetUsd": 0.50 },
+        "business-analyzer":       { "model": "claude-opus-4-6",          "maxTurns": 30, "maxBudgetUsd": 2 },
         "clarification-answerer":  { "model": "claude-opus-4-5-20251101", "maxTurns": 30, "maxBudgetUsd": 1.50 },
         "planner":                 { "model": "claude-opus-4-5-20251101", "maxTurns": 30, "maxBudgetUsd": 2.00 },
-        "microplanner":            { "model": "claude-opus-4-5-20251101", "maxTurns": 20, "maxBudgetUsd": 0.50 },
+        "microplanner":            { "model": "claude-opus-4-5-20251101", "maxTurns": 30, "maxBudgetUsd": 3 },
         "implementer":             { "model": "claude-opus-4-5-20251101", "maxTurns": 50, "maxBudgetUsd": 3.00 },
         "verifier":                { "model": "claude-opus-4-5-20251101", "maxTurns": 30, "maxBudgetUsd": 1.00 },
         "final-verifier":          { "model": "claude-opus-4-5-20251101", "maxTurns": 30, "maxBudgetUsd": 2.00 }
@@ -19,6 +19,6 @@
         "agentTimeoutMinutes": 30
     },
     "defaultMode": "interactive",
-    "buildCommands": ["npm run build"],
+    "buildCommands": ["docker run --rm -v /Users/mu/Coding/scio--progress-path:/src -w /src/ProgressPath mcr.microsoft.com/dotnet/sdk:8.0 dotnet build"],
     "projectContext": ""
 }

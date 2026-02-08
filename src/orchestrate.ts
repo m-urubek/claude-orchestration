@@ -105,7 +105,7 @@ const interactiveMode: PipelineMode = {
                 agent: 'prd-generator',
                 prompt: prdPrompt,
                 jsonSchema: getSchemaForAgent('prd-generator'),
-                allowedTools: ['Read', 'Write', 'Grep', 'Glob'],
+                allowedTools: ['Read', 'Write', 'Grep', 'Glob', 'Bash', 'WebFetch'],
             };
 
             await runAgent<PrdGeneratorOutput>(prdInvocation, {
@@ -206,7 +206,7 @@ async function businessClarificationLoop(ctx: PrdPhaseContext): Promise<void> {
             agent: 'prd-generator',
             prompt: prdPrompt,
             jsonSchema: getSchemaForAgent('prd-generator'),
-            allowedTools: ['Read', 'Write', 'Grep', 'Glob'],
+            allowedTools: ['Read', 'Write', 'Grep', 'Glob', 'Bash', 'WebFetch'],
         };
 
         await runAgent<PrdGeneratorOutput>(prdInvocation, {
@@ -300,7 +300,7 @@ async function technicalClarificationLoop(ctx: PrdPhaseContext): Promise<void> {
             agent: 'prd-generator',
             prompt: prdPrompt,
             jsonSchema: getSchemaForAgent('prd-generator'),
-            allowedTools: ['Read', 'Write', 'Grep', 'Glob'],
+            allowedTools: ['Read', 'Write', 'Grep', 'Glob', 'Bash', 'WebFetch'],
         };
 
         await runAgent<PrdGeneratorOutput>(prdInvocation, {
@@ -357,8 +357,8 @@ async function technicalClarificationLoop(ctx: PrdPhaseContext): Promise<void> {
                         agent: 'clarification-answerer',
                         prompt,
                         jsonSchema: getSchemaForAgent('clarification-answerer'),
-                        tools: ['Read', 'Grep', 'Glob', 'Bash'],
-                        allowedTools: ['Read', 'Grep', 'Glob', 'Bash'],
+                        tools: ['Read', 'Grep', 'Glob', 'Bash', 'WebFetch'],
+                        allowedTools: ['Read', 'Grep', 'Glob', 'Bash', 'WebFetch'],
                     };
                     const response = await runAgentWithSession<ClarificationAnswerResult>(invocation, {
                         config: ctx.config,
@@ -951,7 +951,7 @@ All code changes MUST be made in the project directory (see PROJECT DIRECTORY ab
             agent: 'implementer',
             prompt: implementPrompt,
             jsonSchema: getSchemaForAgent('implementer'),
-            allowedTools: ['Read', 'Edit', 'Write', 'Bash', 'Grep', 'Glob'],
+            allowedTools: ['Read', 'Edit', 'Write', 'Bash', 'Grep', 'Glob', 'WebFetch'],
         };
 
         const implResult = await runAgent<ImplementerResult>(implementInvocation, {

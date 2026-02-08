@@ -113,13 +113,13 @@ The autonomous mode is opinionated toward minimal implementation -- the clarific
 
 | Agent | Role | Model | Tools | Budget |
 |-------|------|-------|-------|--------|
-| `prd-generator` | Writes the PRD document | opus | Read, Write, Grep, Glob | $2.00 |
+| `prd-generator` | Writes the PRD document | opus | Read, Write, Grep, Glob, Bash, WebFetch | $2.00 |
 | `prd-analyzer` | Reviews PRD for gaps, asks clarification questions | opus 4.5 | Read, Grep, Glob | $1.00 |
 | `business-analyzer` | Reviews PRD for business-only gaps (autonomous mode) | opus | Read, Grep, Glob | $0.50 |
-| `clarification-answerer` | Answers technical questions using codebase context | opus 4.5 | Read, Grep, Glob, Bash | $1.50 |
+| `clarification-answerer` | Answers technical questions using codebase context | opus 4.5 | Read, Grep, Glob, Bash, WebFetch | $1.50 |
 | `planner` | Divides work into sequential assignments | opus 4.5 | Read, Grep, Glob | $2.00 |
 | `microplanner` | Creates step-by-step coding plan per assignment | opus 4.5 | Read, Grep, Glob | $0.50 |
-| `implementer` | Writes the actual code | opus 4.5 | Read, Edit, Write, Bash, Grep, Glob | $3.00 |
+| `implementer` | Writes the actual code | opus 4.5 | Read, Edit, Write, Bash, Grep, Glob, WebFetch | $3.00 |
 | `verifier` | Checks implementation against assignment requirements | opus 4.5 | Read, Grep, Glob, Bash | $1.00 |
 | `final-verifier` | Checks all changes against full PRD, runs builds | opus 4.5 | Read, Grep, Glob, Bash | $2.00 |
 
