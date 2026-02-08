@@ -1,6 +1,6 @@
 # Claude Code Agent Pipeline Orchestrator
 
-I made this for my own needs. I pushed it here to make it transparent how I made certain projects. It has a lot of flaws I would love to address soon and I hope I am going to get resources to do so soon.
+I made this for my own needs. I pushed it here to make it transparent how I made certain projects. It has a lot of flaws I would love to address soon and I hope I am going to get resources to do so when I get less busy.
 
 A TypeScript orchestration layer that coordinates specialized [Claude Code](https://docs.anthropic.com/en/docs/claude-code) subagents through a structured pipeline: PRD generation, clarification, planning, implementation, and verification.
 
