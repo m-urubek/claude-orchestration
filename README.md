@@ -1,5 +1,7 @@
 # Claude Code Agent Pipeline Orchestrator
 
+I made this for my own needs. I pushed it here to make it transparent how I made certain projects. It has a lot of flaws I would love to address soon and I hope I am going to get resources to do so when I get less busy.
+
 A TypeScript orchestration layer that coordinates specialized [Claude Code](https://docs.anthropic.com/en/docs/claude-code) subagents through a structured pipeline: PRD generation, clarification, planning, implementation, and verification.
 
 Designed as a standalone repo that can be added to any project workspace via multi-root VS Code workspaces. The orchestrator lives in its own directory; you point it at a target project via `--project-dir` and agents operate on that project using absolute paths.
