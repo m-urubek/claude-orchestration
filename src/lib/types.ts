@@ -204,3 +204,22 @@ export interface ClarificationEntry {
     answers: Array<{ question: string; answer: string }>;
     source?: 'human' | 'agent';
 }
+
+// ─── Logging Types ───────────────────────────────────────────────────────────
+
+export type LogLevel = 'info' | 'success' | 'warn' | 'error' | 'phase' | 'debug';
+
+export type LogEvent =
+    | {
+          type: 'system';
+          level: LogLevel;
+          message: string;
+          timestamp: string;
+      }
+    | {
+          type: 'agent';
+          agent: string;
+          invocationId: string;
+          message: string;
+          timestamp: string;
+      };

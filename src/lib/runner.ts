@@ -1,6 +1,8 @@
 import { spawn, execFileSync } from 'node:child_process';
 import type { AgentInvocation, AgentSessionResult, ClaudeJsonResponse, PipelineConfig, AgentName } from './types.js';
 import { log, saveState, getOrchestratorRoot } from './utils.js';
+import { createAgentLogger, generateInvocationId, broadcastLog, type AgentLogger } from './logger.js';
+import { setCurrentProcess } from './control.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -259,13 +261,31 @@ interface SpawnResult {
     timedOut: boolean;
 }
 
-function spawnClaude(args: string[], timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<SpawnResult> {
+interface SpawnClaudeOptions {
+    args: string[];
+    timeoutMs?: number;
+    agentName?: AgentName;
+    invocationId?: string;
+}
+
+function spawnClaude(options: SpawnClaudeOptions): Promise<SpawnResult> {
+    const { args, timeoutMs = DEFAULT_TIMEOUT_MS, agentName, invocationId } = options;
+
+    // Create agent logger if agent info is provided
+    let agentLogger: AgentLogger | null = null;
+    if (agentName && invocationId) {
+        agentLogger = createAgentLogger(agentName, invocationId);
+    }
+
     return new Promise((resolve) => {
         const child = spawn('claude', args, {
             cwd: getOrchestratorRoot(),
             env: process.env,
             stdio: ['pipe', 'pipe', 'pipe'],
         });
+
+        // Track the current process for pause/stop control
+        setCurrentProcess(child);
 
         // Close stdin immediately — we don't need to write to it,
         // but it must be a pipe (not /dev/null) or Claude CLI may hang.
@@ -279,13 +299,21 @@ function spawnClaude(args: string[], timeoutMs: number = DEFAULT_TIMEOUT_MS): Pr
         // Log a periodic heartbeat so the user knows it's still alive
         const heartbeat = setInterval(() => {
             const elapsed = Math.round((Date.now() - startTime) / 60000);
-            log('debug', `  [claude] still running... (${elapsed} min elapsed)`);
+            const msg = `  [claude] still running... (${elapsed} min elapsed)`;
+            log('debug', msg);
+            broadcastLog('debug', msg);
         }, 60_000);
 
         // Stream stderr to console in real-time (progress/status)
         child.stderr.on('data', (chunk: Buffer) => {
             const text = chunk.toString();
             stderrLines += text;
+            
+            // Write to agent log file
+            if (agentLogger) {
+                agentLogger.write(text);
+            }
+            
             // Show claude CLI stderr as debug output
             for (const line of text.split('\n').filter((l: string) => l.trim())) {
                 log('debug', `  [claude] ${line.trim()}`);
@@ -301,7 +329,9 @@ function spawnClaude(args: string[], timeoutMs: number = DEFAULT_TIMEOUT_MS): Pr
         const totalTimer = setTimeout(() => {
             timedOut = true;
             const elapsed = Math.round((Date.now() - startTime) / 60000);
-            log('error', `Claude process exceeded total timeout of ${Math.round(timeoutMs / 60000)} minutes (ran for ${elapsed} min) — killing`);
+            const msg = `Claude process exceeded total timeout of ${Math.round(timeoutMs / 60000)} minutes (ran for ${elapsed} min) — killing`;
+            log('error', msg);
+            broadcastLog('error', msg);
             child.kill('SIGTERM');
             setTimeout(() => {
                 if (!child.killed) child.kill('SIGKILL');
@@ -311,6 +341,15 @@ function spawnClaude(args: string[], timeoutMs: number = DEFAULT_TIMEOUT_MS): Pr
         child.on('close', (code, signal) => {
             clearTimeout(totalTimer);
             clearInterval(heartbeat);
+            
+            // Clear the current process reference
+            setCurrentProcess(null);
+            
+            // Close the agent logger
+            if (agentLogger) {
+                agentLogger.close();
+            }
+
             const elapsed = Math.round((Date.now() - startTime) / 1000);
             resolve({
                 stdout: Buffer.concat(stdoutChunks).toString('utf-8'),
@@ -324,7 +363,18 @@ function spawnClaude(args: string[], timeoutMs: number = DEFAULT_TIMEOUT_MS): Pr
         child.on('error', (err) => {
             clearTimeout(totalTimer);
             clearInterval(heartbeat);
-            log('error', `Failed to spawn claude: ${err.message}`);
+            
+            // Clear the current process reference
+            setCurrentProcess(null);
+            
+            // Close the agent logger
+            if (agentLogger) {
+                agentLogger.close();
+            }
+            
+            const msg = `Failed to spawn claude: ${err.message}`;
+            log('error', msg);
+            broadcastLog('error', msg);
             resolve({
                 stdout: '',
                 stderr: err.message,
@@ -449,6 +499,7 @@ export async function runAgent<T>(invocation: AgentInvocation, options: RunAgent
     const args = buildClaudeArgs(fullInvocation);
 
     log('info', `Running agent: ${invocation.agent} (model: ${model}, budget: $${maxBudgetUsd ?? 'unlimited'})`);
+    broadcastLog('info', `Running agent: ${invocation.agent} (model: ${model}, budget: $${maxBudgetUsd ?? 'unlimited'})`);
     log('debug', `Command: claude ${args.map((a) => (a.includes(' ') || a.includes('{') ? `'${a.slice(0, 80)}...'` : a)).join(' ')}`);
 
     if (dryRun) {
@@ -463,20 +514,31 @@ export async function runAgent<T>(invocation: AgentInvocation, options: RunAgent
 
     let lastError: Error | null = null;
 
+    // Generate invocation ID for logging
+    const invocationId = generateInvocationId();
+
     for (let attempt = 0; attempt <= retries; attempt++) {
         if (attempt > 0) {
             log('warn', `Retry ${attempt}/${retries} for agent ${invocation.agent}`);
+            broadcastLog('warn', `Retry ${attempt}/${retries} for agent ${invocation.agent}`);
         }
 
         try {
-            const result = await spawnClaude(args, timeoutMs);
+            const result = await spawnClaude({
+                args,
+                timeoutMs,
+                agentName: invocation.agent,
+                invocationId: `${invocationId}-attempt${attempt}`,
+            });
             const structuredOutput = parseClaudeResponse<T>(invocation.agent, result, stateFile);
 
             log('success', `Agent ${invocation.agent} completed successfully`);
+            broadcastLog('success', `Agent ${invocation.agent} completed successfully`);
             return structuredOutput;
         } catch (err) {
             lastError = err instanceof Error ? err : new Error(String(err));
             log('error', `Agent ${invocation.agent} failed: ${lastError.message.slice(0, 500)}`);
+            broadcastLog('error', `Agent ${invocation.agent} failed: ${lastError.message.slice(0, 500)}`);
         }
     }
 
@@ -517,6 +579,7 @@ export async function runAgentWithSession<T>(
     const args = buildClaudeArgs(fullInvocation);
 
     log('info', `Running agent (with session): ${invocation.agent} (model: ${model}, budget: $${maxBudgetUsd ?? 'unlimited'})`);
+    broadcastLog('info', `Running agent (with session): ${invocation.agent} (model: ${model}, budget: $${maxBudgetUsd ?? 'unlimited'})`);
 
     if (dryRun) {
         log('info', `[DRY RUN] Would invoke agent ${invocation.agent} (with session)`);
@@ -527,13 +590,22 @@ export async function runAgentWithSession<T>(
 
     let lastError: Error | null = null;
 
+    // Generate invocation ID for logging
+    const invocationId = generateInvocationId();
+
     for (let attempt = 0; attempt <= retries; attempt++) {
         if (attempt > 0) {
             log('warn', `Retry ${attempt}/${retries} for agent ${invocation.agent} (session start)`);
+            broadcastLog('warn', `Retry ${attempt}/${retries} for agent ${invocation.agent} (session start)`);
         }
 
         try {
-            const spawnResult = await spawnClaude(args, timeoutMs);
+            const spawnResult = await spawnClaude({
+                args,
+                timeoutMs,
+                agentName: invocation.agent,
+                invocationId: `${invocationId}-attempt${attempt}`,
+            });
 
             if (spawnResult.timedOut) {
                 throw new Error(`Agent ${invocation.agent} timed out`);
@@ -573,12 +645,14 @@ export async function runAgentWithSession<T>(
             }
 
             log('success', `Agent ${invocation.agent} session started: ${sessionId.slice(0, 12)}...`);
+            broadcastLog('success', `Agent ${invocation.agent} session started: ${sessionId.slice(0, 12)}...`);
             if (stateFile) saveState(stateFile, structuredOutput);
 
             return { result: structuredOutput, sessionId };
         } catch (err) {
             lastError = err instanceof Error ? err : new Error(String(err));
             log('error', `Agent ${invocation.agent} failed: ${lastError.message.slice(0, 500)}`);
+            broadcastLog('error', `Agent ${invocation.agent} failed: ${lastError.message.slice(0, 500)}`);
         }
     }
 
@@ -601,6 +675,7 @@ export async function resumeAgent<T>(
     const args = buildResumeArgs(sessionId, prompt, jsonSchema);
 
     log('info', `Resuming session ${sessionId.slice(0, 12)}...`);
+    broadcastLog('info', `Resuming session ${sessionId.slice(0, 12)}...`);
 
     if (dryRun) {
         log('info', `[DRY RUN] Would resume session ${sessionId.slice(0, 12)}...`);
@@ -616,13 +691,23 @@ export async function resumeAgent<T>(
 
     let lastError: Error | null = null;
 
+    // Generate invocation ID for logging (use session ID prefix for resume)
+    const invocationId = generateInvocationId();
+
     for (let attempt = 0; attempt <= retries; attempt++) {
         if (attempt > 0) {
             log('warn', `Retry ${attempt}/${retries} for session resume ${sessionId.slice(0, 12)}...`);
+            broadcastLog('warn', `Retry ${attempt}/${retries} for session resume ${sessionId.slice(0, 12)}...`);
         }
 
         try {
-            const spawnResult = await spawnClaude(args, timeoutMs);
+            const spawnResult = await spawnClaude({
+                args,
+                timeoutMs,
+                // For resume, we use a generic agent name since we may not know which agent
+                agentName: 'clarification-answerer',
+                invocationId: `${invocationId}-resume-attempt${attempt}`,
+            });
 
             if (spawnResult.timedOut) {
                 throw new Error(`Session resume timed out`);
@@ -658,12 +743,14 @@ export async function resumeAgent<T>(
             }
 
             log('success', `Session ${sessionId.slice(0, 12)}... resumed successfully`);
+            broadcastLog('success', `Session ${sessionId.slice(0, 12)}... resumed successfully`);
             if (stateFile) saveState(stateFile, structuredOutput);
 
             return { result: structuredOutput, sessionId: newSessionId };
         } catch (err) {
             lastError = err instanceof Error ? err : new Error(String(err));
             log('error', `Session resume failed: ${lastError.message.slice(0, 500)}`);
+            broadcastLog('error', `Session resume failed: ${lastError.message.slice(0, 500)}`);
         }
     }
 

@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as readline from 'node:readline';
 import { execSync } from 'node:child_process';
 import type { PipelineConfig, PipelineState, ClarificationEntry } from './types.js';
+import { broadcastLog } from './logger.js';
 
 // ─── Path Resolution ─────────────────────────────────────────────────────────
 
@@ -111,6 +112,9 @@ export function log(level: LogLevel, message: string): void {
     const color = levelColors[level];
     const label = levelLabels[level];
     console.log(`${colors.dim}[${timestamp}]${colors.reset} ${color}${colors.bold}${label}${colors.reset} ${message}`);
+    
+    // Broadcast to SSE clients
+    broadcastLog(level, message);
 }
 
 // ─── Git ─────────────────────────────────────────────────────────────────────
